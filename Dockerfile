@@ -5,13 +5,13 @@ WORKDIR /app
 
 # System deps for dlib / OpenCV / imgaug
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
     libxrender-dev \
     libgomp1 \
-    libgl1 \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -36,6 +36,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     libxrender-dev \
     libgomp1 \
+    libgl1 \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
