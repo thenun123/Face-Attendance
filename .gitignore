@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Environments
+.env
+.venv
+venv/
+env/
+
+# Database (local dev only — never commit)
+*.db
+*.sqlite3
+
+# Local unknown face snapshots
+unknown_faces/
+
+# ML model cache
+~/.cache/torch/
+*.pt
+*.pth
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+test_ci.db
+
+# Logs
+*.log

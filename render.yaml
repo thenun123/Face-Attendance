@@ -1,0 +1,88 @@
+# render.yaml — Render.com deployment config
+# Docs: https://render.com/docs/blueprint-spec
+#
+# HOW TO USE:
+#   1. Push this repo to GitHub
+#   2. Go to Render Dashboard → New → Blueprint
+#   3. Connect your GitHub repo — Render reads this file automatically
+#   4. Fill in the "sync: false" env vars in the Render dashboard
+
+services:
+  - type: web
+    name: face-attendance-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free                    # Change to "starter" or higher when scaling
+
+    # Health check — also used by UptimeRobot to keep free tier awake
+    healthCheckPath: /health
+
+    # Auto-deploy on every push to main
+    autoDeploy: true
+    branch: main
+
+    envVars:
+      # ── Database (Supabase) ─────────────────────────────────────────────────
+      # Paste your Supabase Transaction pooler URL (port 6543)
+      # Format: postgresql+asyncpg://postgres.[ref]:[pass]@aws-0-*.pooler.supabase.com:6543/postgres
+      - key: DATABASE_URL
+        sync: false
+
+      # ── JWT Auth ────────────────────────────────────────────────────────────
+      # Generate: python -c "import secrets; print(secrets.token_hex(32))"
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_EXPIRE_MINUTES
+        value: "480"
+
+      # ── First-admin setup ───────────────────────────────────────────────────
+      # Set this ONCE to create the first admin, then remove it for security
+      # Generate: python -c "import secrets; print(secrets.token_hex(16))"
+      - key: SETUP_TOKEN
+        sync: false
+
+      # ── ImageKit ────────────────────────────────────────────────────────────
+      - key: IMAGEKIT_PUBLIC_KEY
+        sync: false
+      - key: IMAGEKIT_PRIVATE_KEY
+        sync: false
+      - key: IMAGEKIT_URL_ENDPOINT
+        sync: false
+      - key: IMAGEKIT_UPLOAD_FOLDER
+        value: /face_attendance/unknown_faces
+
+      # ── CORS ────────────────────────────────────────────────────────────────
+      # Add your Vercel domain here once deployed, e.g.:
+      # https://face-attendance.vercel.app,https://*.vercel.app
+      - key: CORS_ORIGINS
+        sync: false
+
+      # ── App ─────────────────────────────────────────────────────────────────
+      - key: APP_VERSION
+        value: "2.0.0"
+      - key: DEBUG
+        value: "false"
+      - key: TIMEZONE
+        value: Asia/Karachi
+
+      # ── ML / Recognition ────────────────────────────────────────────────────
+      - key: MODEL_NAME
+        value: vggface2
+      - key: RECOGNITION_THRESHOLD
+        value: "0.65"
+      - key: CONFIRM_FRAMES
+        value: "3"
+      - key: ANTI_SPAM_MINUTES
+        value: "5"
+
+      # ── Shift defaults ──────────────────────────────────────────────────────
+      - key: DEFAULT_SHIFT_START
+        value: "09:00"
+      - key: DEFAULT_SHIFT_END
+        value: "17:00"
+      - key: LATE_GRACE_MINUTES
+        value: "10"
+      - key: HALF_DAY_HOUR
+        value: "11"

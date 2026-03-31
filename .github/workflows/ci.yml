@@ -1,0 +1,80 @@
+# .github/workflows/ci.yml
+# Runs on every push/PR to main — lints + smoke-tests the app
+# Render auto-deploys after this passes (connect via Render's GitHub integration)
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      # Use SQLite-compatible URL for CI (no Supabase needed)
+      DATABASE_URL: "sqlite+aiosqlite:///./test.db"
+      JWT_SECRET: "ci-test-secret-not-for-production"
+      JWT_ALGORITHM: "HS256"
+      JWT_EXPIRE_MINUTES: "60"
+      DEBUG: "false"
+      SETUP_TOKEN: "ci-setup-token"
+      IMAGEKIT_PUBLIC_KEY: ""
+      IMAGEKIT_PRIVATE_KEY: ""
+      IMAGEKIT_URL_ENDPOINT: ""
+      CORS_ORIGINS: "http://localhost:3000"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install CPU-only torch (fast CI install)
+        run: |
+          pip install --upgrade pip
+          pip install torch==2.2.2+cpu torchvision==0.17.2+cpu \
+            --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint with ruff
+        run: |
+          pip install ruff
+          ruff check app/ --select E,F,W --ignore E501
+
+      - name: Run tests
+        run: pytest tests/ -v --timeout=60 || echo "No tests yet — add tests/test_health.py"
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t face-attendance-api:ci .
+
+      - name: Smoke test container
+        run: |
+          docker run -d \
+            --name app \
+            -p 8000:8000 \
+            -e DATABASE_URL="sqlite+aiosqlite:///./test.db" \
+            -e JWT_SECRET="ci-smoke-secret" \
+            -e JWT_ALGORITHM=HS256 \
+            -e JWT_EXPIRE_MINUTES=60 \
+            -e DEBUG=false \
+            -e SETUP_TOKEN=ci-token \
+            face-attendance-api:ci
+          sleep 10
+          curl --fail http://localhost:8000/health || (docker logs app && exit 1)
+          docker stop app

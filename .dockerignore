@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Environments
+.env
+.venv
+venv/
+env/
+
+# Dev / IDE
+.git/
+.gitignore
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Test artifacts
+.pytest_cache/
+htmlcov/
+.coverage
+*.log
+
+# Local data (never ship to image)
+unknown_faces/
+attendance.db
+*.db
+
+# Docs / CI (not needed at runtime)
+README.md
+.github/
