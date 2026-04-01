@@ -49,7 +49,7 @@ async def register_employee(
         except ValueError as e:
             raise HTTPException(status_code=400, detail=f"Bad image: {e}")
 
-        embeddings = augment_and_embed(rgb, n_augments=5)
+        embeddings = augment_and_embed(rgb, n_augments=1)
         if not embeddings:
             raise HTTPException(
                 status_code=422,
