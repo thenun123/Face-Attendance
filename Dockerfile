@@ -44,25 +44,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy application source (exclude dev/cache files via .dockerignore)
+# Copy application source
 COPY . .
 
-# Pre-download FaceNet weights at build time so first request is not slow
-RUN python -c "from facenet_pytorch import InceptionResnetV1; InceptionResnetV1(pretrained='vggface2')" \
+# ── FIX: Point ALL model caches to /app/.cache (writable by appuser) ──────────
+ENV TORCH_HOME=/app/.cache/torch
+ENV XDG_CACHE_HOME=/app/.cache
+
+# ── FIX: Pre-download FaceNet weights into /app/.cache while still root ────────
+RUN mkdir -p /app/.cache && \
+    python -c "from facenet_pytorch import InceptionResnetV1; InceptionResnetV1(pretrained='vggface2')" \
     || echo "Weight pre-download skipped (network unavailable at build time)"
 
-# Local fallback dir for unknown face snapshots (used when ImageKit not configured)
+# Local fallback dir for unknown face snapshots
 RUN mkdir -p unknown_faces
 
-# Non-root user for security
+# ── FIX: Give appuser ownership of ALL of /app including .cache ────────────────
 RUN adduser --disabled-password --no-create-home appuser && \
     chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8000
 
-# Render free tier: 1 worker keeps memory under 512 MB.
-# Upgrade plan and increase --workers when scaling.
 CMD ["uvicorn", "app.main:app", \
      "--host", "0.0.0.0", \
      "--port", "8000", \
